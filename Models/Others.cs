@@ -88,4 +88,43 @@ namespace VehicleManagementAPI.Models
         [ForeignKey("User_Id")]
         public User User { get; set; }
     }
+
+    public class PartRequest
+    {
+        [Key]
+        public int Request_Id { get; set; }
+        
+        [Required]
+        public string Part_Name { get; set; }
+        
+        public string Description { get; set; }
+        
+        [Required]
+        public DateTime Request_Date { get; set; }
+        
+        public int User_Id { get; set; }
+        
+        [ForeignKey("User_Id")]
+        public User User { get; set; }
+    }
+
+    public class ServiceReview
+    {
+        [Key]
+        public int Review_Id { get; set; }
+        
+        [Required]
+        public string Review_Text { get; set; }
+        
+        [Required]
+        public int Rating { get; set; } // 1-5
+        
+        [Required]
+        public DateTime Review_Date { get; set; }
+        
+        public int User_Id { get; set; }
+        
+        [ForeignKey("User_Id")]
+        public User User { get; set; }
+    }
 }
