@@ -33,7 +33,7 @@ namespace VehicleManagementAPI.Controllers
                 Email = registerDto.Email,
                 Contact = registerDto.Contact,
                 Password = registerDto.Password,
-                User_Role = string.IsNullOrEmpty(registerDto.User_Role) ? "Customer" : registerDto.User_Role
+                User_Role = "Customer"
             };
 
             _context.Users.Add(user);
@@ -228,6 +228,81 @@ namespace VehicleManagementAPI.Controllers
                     inner = innerMessage 
                 });
             }
+        }
+
+        [HttpPost("request-part")]
+        public async Task<IActionResult> RequestPart(PartRequestDto requestDto)
+        {
+            var request = new PartRequest
+            {
+                Part_Name = requestDto.Part_Name,
+                Description = requestDto.Description,
+                Request_Date = DateTime.UtcNow,
+                User_Id = requestDto.User_Id
+            };
+
+            _context.PartRequests.Add(request);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Part request submitted successfully" });
+        }
+
+        [HttpPost("submit-review")]
+        public async Task<IActionResult> SubmitReview(ServiceReviewDto reviewDto)
+        {
+            var review = new ServiceReview
+            {
+                Review_Text = reviewDto.Review_Text,
+                Rating = reviewDto.Rating,
+                Review_Date = DateTime.UtcNow,
+                User_Id = reviewDto.User_Id
+            };
+
+            _context.ServiceReviews.Add(review);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Review submitted successfully" });
+        }
+
+        [HttpGet("part-requests/{userId}")]
+        public async Task<ActionResult<IEnumerable<PartRequestDto>>> GetPartRequests(int userId)
+        {
+            return await _context.PartRequests
+                .Where(r => r.User_Id == userId)
+                .Select(r => new PartRequestDto
+                {
+                    Request_Id = r.Request_Id,
+                    Part_Name = r.Part_Name,
+                    Description = r.Description,
+                    Request_Date = r.Request_Date,
+                    User_Id = r.User_Id
+                })
+                .ToListAsync();
+        }
+
+        [HttpGet("reviews/{userId}")]
+        public async Task<ActionResult<IEnumerable<ServiceReviewDto>>> GetReviews(int userId)
+        {
+            return await _context.ServiceReviews
+                .Where(r => r.User_Id == userId)
+                .Select(r => new ServiceReviewDto
+                {
+                    Review_Id = r.Review_Id,
+                    Review_Text = r.Review_Text,
+                    Rating = r.Rating,
+                    Review_Date = r.Review_Date,
+                    User_Id = r.User_Id
+                })
+                .ToListAsync();
+        }
+
+        [HttpGet("notifications/{userId}")]
+        public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications(int userId)
+        {
+            return await _context.Notifications
+                .Where(n => n.User_Id == userId)
+                .OrderByDescending(n => n.Notification_Time)
+                .ToListAsync();
         }
     }
 
