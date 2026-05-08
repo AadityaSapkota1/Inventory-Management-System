@@ -139,6 +139,40 @@ namespace VehicleManagementAPI.Controllers
             });
         }
 
+        [HttpGet("all-part-requests")]
+        public async Task<ActionResult<IEnumerable<PartRequestDto>>> GetAllPartRequests()
+        {
+            return await _context.PartRequests
+                .Include(r => r.User)
+                .Select(r => new PartRequestDto
+                {
+                    Request_Id = r.Request_Id,
+                    Part_Name = r.Part_Name,
+                    Description = r.Description,
+                    Request_Date = r.Request_Date,
+                    User_Id = r.User_Id,
+                    Customer_Name = r.User.FullName
+                })
+                .ToListAsync();
+        }
+
+        [HttpGet("all-reviews")]
+        public async Task<ActionResult<IEnumerable<ServiceReviewDto>>> GetAllReviews()
+        {
+            return await _context.ServiceReviews
+                .Include(r => r.User)
+                .Select(r => new ServiceReviewDto
+                {
+                    Review_Id = r.Review_Id,
+                    Review_Text = r.Review_Text,
+                    Rating = r.Rating,
+                    Review_Date = r.Review_Date,
+                    User_Id = r.User_Id,
+                    Customer_Name = r.User.FullName
+                })
+                .ToListAsync();
+        }
+
         [HttpGet("customers")]
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAllCustomers()
         {
@@ -168,6 +202,127 @@ namespace VehicleManagementAPI.Controllers
                 .ToListAsync();
 
             return Ok(customers);
+        }
+
+        // Feature 9: Staff can generate customer-related reports
+        [HttpGet("reports/regular-customers")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetRegularCustomers()
+        {
+            var customers = await _context.Users
+                .Include(u => u.Appointments)
+                .Where(u => u.User_Role == "Customer")
+                .Select(u => new CustomerDto
+                {
+                    User_Id = u.User_Id,
+                    FullName = u.FullName,
+                    Booking_Count = u.Appointments.Count
+                })
+                .OrderByDescending(u => u.Booking_Count)
+                .Take(10)
+                .ToListAsync();
+
+            return Ok(customers);
+        }
+
+        [HttpGet("reports/high-spenders")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetHighSpenders()
+        {
+            var customers = await _context.Users
+                .Include(u => u.SalesInvoices)
+                .Where(u => u.User_Role == "Customer")
+                .Select(u => new CustomerDto
+                {
+                    User_Id = u.User_Id,
+                    FullName = u.FullName,
+                    Total_Spent = u.SalesInvoices.Sum(s => s.Total_Amount)
+                })
+                .OrderByDescending(u => u.Total_Spent)
+                .Take(10)
+                .ToListAsync();
+
+            return Ok(customers);
+        }
+
+        [HttpGet("reports/pending-credits")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetPendingCredits()
+        {
+            var customers = await _context.Users
+                .Include(u => u.SalesInvoices)
+                .Where(u => u.User_Role == "Customer")
+                .Select(u => new CustomerDto
+                {
+                    User_Id = u.User_Id,
+                    FullName = u.FullName,
+                    Pending_Credit = u.SalesInvoices.Where(s => s.Payment_Status != "Paid").Sum(s => s.Total_Amount)
+                })
+                .Where(u => u.Pending_Credit > 0)
+                .OrderByDescending(u => u.Pending_Credit)
+                .ToListAsync();
+
+            return Ok(customers);
+        }
+
+        // Feature 15: Overdue credit reminders
+        [HttpPost("send-overdue-reminders")]
+        public async Task<IActionResult> SendOverdueReminders()
+        {
+            var oneMonthAgo = DateTime.UtcNow.AddMonths(-1);
+            var overdueInvoices = await _context.SalesInvoices
+                .Include(i => i.User)
+                .Where(i => i.Payment_Status != "Paid" && i.Sales_Date < oneMonthAgo)
+                .ToListAsync();
+
+            foreach (var invoice in overdueInvoices)
+            {
+                // Mock email sending
+                Console.WriteLine($"Sending overdue reminder to {invoice.User.Email} for invoice #{invoice.Sales_Invoice_ID} (Date: {invoice.Sales_Date})");
+                
+                // Add notification to system
+                _context.Notifications.Add(new Notification
+                {
+                    Notification_Message = $"Overdue payment reminder for invoice #{invoice.Sales_Invoice_ID}. Amount: {invoice.Total_Amount}",
+                    Notification_Time = DateTime.UtcNow,
+                    User_Id = invoice.User_Id
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = $"{overdueInvoices.Count} overdue reminders processed." });
+        }
+
+        [HttpGet("appointments")]
+        public async Task<ActionResult<IEnumerable<AppointmentResponseDto>>> GetAllAppointments()
+        {
+            var appointments = await _context.Appointments
+                .Include(a => a.Vehicle)
+                .Include(a => a.User)
+                .OrderByDescending(a => a.Service_Date)
+                .Select(a => new AppointmentResponseDto
+                {
+                    Appointment_Id = a.Appointment_Id,
+                    Service_Date = a.Service_Date,
+                    Service_Time = a.Service_Time,
+                    Status = a.Status,
+                    Vehicle_Number = a.Vehicle.Vehicle_Number,
+                    Vehicle_Type = a.Vehicle.Vehicle_Type,
+                    Customer_Name = a.User.FullName,
+                    Contact = a.User.Contact
+                })
+                .ToListAsync();
+
+            return Ok(appointments);
+        }
+
+        [HttpPut("appointments/{id}/status")]
+        public async Task<IActionResult> UpdateAppointmentStatus(int id, [FromBody] string status)
+        {
+            var appointment = await _context.Appointments.FindAsync(id);
+            if (appointment == null) return NotFound();
+
+            appointment.Status = status;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
