@@ -91,6 +91,21 @@ namespace VehicleManagementAPI.Controllers
             return NoContent();
         }
 
+        [HttpDelete("delete-user/{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Prevent self-deletion if we had auth, but for now just delete
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
         [HttpDelete("delete-staff/{id}")]
         public async Task<IActionResult> DeleteStaff(int id)
         {
