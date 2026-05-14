@@ -32,6 +32,11 @@ namespace VehicleManagementAPI.Controllers
                 };
 
                 decimal total = 0;
+                // Fetch both Admins and Staff to ensure someone sees the notification
+                var staffAndAdmins = await _context.Users
+                    .Where(u => u.User_Role.ToLower() == "admin" || u.User_Role.ToLower() == "staff")
+                    .ToListAsync();
+
                 foreach (var itemDto in invoiceDto.Items)
                 {
                     var part = await _context.Parts.FindAsync(itemDto.Part_Id);
@@ -51,13 +56,15 @@ namespace VehicleManagementAPI.Controllers
                     // Automatically notify admin if low stock (<10) - Feature 15
                     if (part.Stock < 10)
                     {
-                        // Logic for notification could be added here (e.g. to Notifications table)
-                        _context.Notifications.Add(new Notification
+                        foreach (var recipient in staffAndAdmins)
                         {
-                            Notification_Message = $"Low stock alert for {part.Part_Name}. Current stock: {part.Stock}",
-                            Notification_Time = DateTime.UtcNow,
-                            User_Id = 1 // Assuming 1 is the Admin ID for now
-                        });
+                            _context.Notifications.Add(new Notification
+                            {
+                                Notification_Message = $"LOW STOCK ALERT: {part.Part_Name} has only {part.Stock} left in inventory.",
+                                Notification_Time = DateTime.UtcNow,
+                                User_Id = recipient.User_Id
+                            });
+                        }
                     }
 
                     var itemPrice = part.Part_Price; // Use current part price
