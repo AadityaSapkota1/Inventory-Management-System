@@ -35,6 +35,25 @@ namespace VehicleManagementAPI.Controllers
                 .ToListAsync();
         }
 
+        [HttpGet("vendor/{vendorId}")]
+        public async Task<ActionResult<IEnumerable<VendorItemDto>>> GetItemsByVendor(int vendorId)
+        {
+            return await _context.VendorItems
+                .Include(v => v.Vendor)
+                .Where(v => v.Vendor_Id == vendorId)
+                .Select(v => new VendorItemDto
+                {
+                    VendorItem_Id = v.VendorItem_Id,
+                    Part_Name = v.Part_Name,
+                    Part_Price = v.Part_Price,
+                    Available = v.Available,
+                    Vendor_Id = v.Vendor_Id,
+                    Vendor_Name = v.Vendor.Vendor_Name,
+                    Part_Id = v.Part_Id
+                })
+                .ToListAsync();
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<VendorItemDto>> GetVendorItem(int id)
         {
