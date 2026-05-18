@@ -20,6 +20,8 @@ namespace VehicleManagementAPI.Data
         public DbSet<SalesInvoice> SalesInvoices { get; set; }
         public DbSet<SalesItem> SalesItems { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<PartRequest> PartRequests { get; set; }
+        public DbSet<ServiceReview> ServiceReviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

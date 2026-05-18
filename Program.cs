@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VehicleManagementAPI.Data;
+using VehicleManagementAPI.Middleware;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -30,6 +31,8 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
