@@ -19,5 +19,27 @@ namespace VehicleManagementAPI.DTOs
         public string Status { get; set; }
         public string Vehicle_Number { get; set; }
         public string Vehicle_Type { get; set; }
+        public string Customer_Name { get; set; }
+        public string Contact { get; set; }
+    }
+
+    public class PartRequestDto
+    {
+        public int Request_Id { get; set; }
+        public string Part_Name { get; set; }
+        public string Description { get; set; }
+        public DateTime Request_Date { get; set; }
+        public int User_Id { get; set; }
+        public string? Customer_Name { get; set; }
+    }
+
+    public class ServiceReviewDto
+    {
+        public int Review_Id { get; set; }
+        public string Review_Text { get; set; }
+        public int Rating { get; set; }
+        public DateTime Review_Date { get; set; }
+        public int User_Id { get; set; }
+        public string? Customer_Name { get; set; }
     }
 }
